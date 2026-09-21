@@ -1,120 +1,212 @@
 # Cybersecurity Monitoring Lab
 
-A practical cybersecurity monitoring environment developed during my final Cybersecurity internship project.
+A practical **SIEM / IDS / Cyber Threat Intelligence platform** developed during my final Cybersecurity internship project in a real educational environment.
 
-The project focused on implementing a centralized security monitoring architecture using **Wazuh**, **Suricata** and **MISP**, combining SIEM, Network Intrusion Detection and Cyber Threat Intelligence capabilities.
+The project combines **Wazuh**, **Suricata**, **MISP**, **AbuseIPDB** and **Proxmox VE** to provide centralized monitoring, network intrusion detection, threat intelligence integration, reputation enrichment and controlled automated response.
 
-## 🎯 Project Objectives
+## Project Overview
 
-- Centralize security events and alerts
-- Monitor network traffic for suspicious activity
-- Detect potential attacks and network scans
-- Reduce false positives and unnecessary alerts
-- Integrate threat intelligence capabilities
-- Improve visibility over the monitored infrastructure
+The objective of the project was to design and implement a modular cybersecurity monitoring architecture capable of:
 
-## 🏗️ Architecture
+- Centralizing security events
+- Monitoring endpoints and infrastructure
+- Detecting suspicious network activity
+- Correlating Suricata IDS alerts
+- Integrating external Cyber Threat Intelligence
+- Detecting Indicators of Compromise (IOCs)
+- Enriching IP addresses with reputation information
+- Executing controlled automated responses
+- Managing alert retention
+- Providing operational security dashboards
 
-The environment was deployed using **Proxmox** virtualization and Linux-based systems.
+## Architecture
+
+The infrastructure was virtualized using **Proxmox VE**.
 
 Main components:
 
-- **Wazuh** — SIEM, log analysis and security monitoring
-- **Suricata** — Network Intrusion Detection System (NIDS)
-- **MISP** — Cyber Threat Intelligence platform
-- **Proxmox** — Virtualization infrastructure
+- **Wazuh** — SIEM/XDR, event collection, correlation and dashboards
+- **Suricata** — Network Intrusion Detection System
+- **MISP** — Cyber Threat Intelligence and IOC management
+- **AbuseIPDB** — IP reputation enrichment
+- **Proxmox VE** — Virtualization and service isolation
 - **Linux / Ubuntu Server** — Server environment
-- **Network Port Mirroring** — Traffic visibility for Suricata
+- **Wazuh Agents** — Endpoint and infrastructure monitoring
 
-> A sanitized architecture diagram will be added to this repository.
+Detailed architecture documentation:
 
-## 🔐 Wazuh
+[View Architecture Documentation](docs/architecture.md)
 
-Wazuh was used as the central security monitoring platform.
+## Wazuh
 
-Work performed included:
-
-- Deployment and configuration of Wazuh components
-- Integration of Suricata alerts
-- Security event analysis
-- Custom detection and correlation rules
-- Alert noise reduction
-- Index retention management
-
-## 🦈 Suricata
-
-Suricata was deployed as a Network Intrusion Detection System.
+Wazuh operated as the central monitoring and correlation platform.
 
 The implementation included:
 
-- Network traffic monitoring
+- Wazuh Manager
+- Wazuh Indexer
+- Filebeat
+- Wazuh Dashboard
+- Endpoint agents
+- Custom detection and correlation rules
+- Suricata event ingestion
+- MISP IOC correlation
+- AbuseIPDB enrichment
+- Active Response monitoring
+- Index State Management retention policies
+- Operational dashboards
+
+Custom rule examples are available in:
+
+[Wazuh Detection Rules](wazuh/README.md)
+
+## Suricata
+
+Suricata operated as the dedicated Network Intrusion Detection System.
+
+The implementation included:
+
+- Passive network monitoring
 - Emerging Threats rules
-- `HOME_NET` configuration
-- Analysis of `eve.json` events
-- Detection testing using controlled Nmap scans
-- Rule tuning and false-positive reduction
+- `HOME_NET` and `EXTERNAL_NET` configuration
+- Dedicated capture interface
+- `eve.json` event generation
+- Integration with Wazuh
+- Controlled Nmap testing
+- False-positive reduction
+- IP Reputation integration with MISP
 
-Examples of noisy traffic identified during analysis included:
+Documentation and sanitized configuration examples:
 
-- STUN / WebRTC
-- Spotify P2P
-- Discord traffic
-- SSDP
-- Package-management traffic
+[Suricata Documentation](suricata/README.md)
 
-## 🧠 Threat Intelligence
+## MISP Threat Intelligence
 
-**MISP** was deployed to introduce Cyber Threat Intelligence capabilities into the monitoring environment.
+MISP was used as the central Cyber Threat Intelligence platform.
 
-The environment included:
+Public CTI feeds were enabled and IOC data was exported automatically through the MISP REST API.
 
-- MISP deployment and configuration
-- MariaDB
-- Redis
-- Apache
-- Python MISP/STIX libraries
-- Preparation for IOC-based security monitoring
+The integration pipeline was:
 
-## 🔎 Detection Engineering
+**MISP → IOC Dataset → Suricata IP Reputation → Wazuh Correlation**
 
-A custom Wazuh correlation rule was developed to identify repeated network scan activity.
+A custom automation script extracted `ip-dst` indicators from MISP and generated datasets consumed by Suricata.
 
-The rule correlated multiple Suricata events originating from the same source within a defined time window.
+The IOC synchronization process was scheduled to execute automatically every hour.
 
-This demonstrated how raw NIDS events could be transformed into higher-level security alerts.
+[MISP Integration Documentation](misp/README.md)
 
-## 🧪 Testing
+## AbuseIPDB Enrichment
 
-The environment was tested using controlled network activity, including Nmap SYN scans.
+AbuseIPDB was integrated as an additional reputation source.
 
-Testing was used to:
+Observed IP addresses could be enriched with information such as:
 
-1. Generate network security events
-2. Verify Suricata detection
-3. Confirm event ingestion into Wazuh
-4. Analyze generated alerts
-5. Tune detection rules and reduce noise
+- Abuse confidence score
+- Number of reports
+- Country
+- ISP
+- Domain
+- Tor usage
 
-## 🛠️ Technologies
+The enrichment results were written to a log monitored by Wazuh and processed using custom rules.
 
-`Wazuh` `Suricata` `MISP` `Proxmox` `Linux` `Ubuntu` `SIEM` `NIDS` `CTI` `Networking`
+## Detection Engineering
 
-## 📚 What I Learned
+Custom Wazuh rules were developed for several security scenarios, including:
 
-This project provided practical experience with:
+- Network scans
+- Repeated reconnaissance
+- Scans against critical services
+- Malware-related traffic
+- Command and Control activity
+- Exploitation attempts
+- Phishing
+- Suspicious Discord webhook activity
+- MISP IOC matches
+- Active Response events
+- AbuseIPDB enrichment
 
-- SIEM architecture
-- Network intrusion detection
-- Security event analysis
-- Detection engineering
-- False-positive management
-- Linux server administration
-- Virtualized infrastructure
+Several detection rules were also mapped to relevant **MITRE ATT&CK** techniques.
+
+## Active Response
+
+A controlled Wazuh Active Response proof of concept was implemented.
+
+When Suricata detected network communication matching an IOC imported from MISP:
+
+**MISP → Suricata → Wazuh → Active Response → iptables**
+
+The response executed a local script on the Suricata IDS virtual machine and created an `iptables` DROP rule.
+
+This implementation demonstrated automated response capabilities but was intentionally limited to local blocking on the Suricata VM and was not designed as a perimeter firewall for the entire network.
+
+## Automation
+
+Several Bash scripts were developed to automate security operations:
+
+- `update_misp_iocs.sh` — Synchronizes MISP IOC data with Suricata
+- `misp_ioc_block.sh` — Performs controlled IOC-based Active Response
+- `abuseipdb_check.sh` — Enriches IP addresses using AbuseIPDB
+
+Scripts and documentation:
+
+[Automation Scripts](scripts/README.md)
+
+## Data Retention
+
+An OpenSearch Index State Management policy was configured for `wazuh-alerts-*`.
+
+The policy automatically manages alert indices and removes data older than **30 days**.
+
+## Dashboards
+
+Operational dashboards were created for:
+
+- Infrastructure monitoring
+- Suricata IDS
+- Threat Hunting
 - Cyber Threat Intelligence
-- Troubleshooting and technical documentation
 
-## 🚧 Repository Status
+The CTI dashboard included visibility into IOC detections, automated responses and AbuseIPDB enrichment.
 
-This repository is currently being expanded with sanitized documentation, architecture diagrams, detection examples and configuration samples.
+## Validation
 
-> Sensitive information related to the original infrastructure has been removed or generalized.
+The environment was validated through controlled testing.
+
+Validated components included:
+
+- Wazuh agent communication
+- Endpoint and infrastructure monitoring
+- Suricata event ingestion through `eve.json`
+- MISP IOC detection
+- Local Active Response
+- AbuseIPDB enrichment
+- ISM retention policy
+- Security dashboards
+
+Network reconnaissance testing using Nmap was also performed. Detection required tuning and was treated as a controlled validation scenario rather than proof of universal network visibility.
+
+## Repository Structure
+
+- `docs/` — Architecture and technical documentation
+- `wazuh/` — Custom Wazuh detection rules
+- `suricata/` — Suricata documentation and configuration examples
+- `misp/` — MISP and IOC integration documentation
+- `scripts/` — Automation and Active Response scripts
+
+## Technologies
+
+`Wazuh` `Suricata` `MISP` `AbuseIPDB` `Proxmox VE` `Linux` `SIEM` `NIDS` `CTI` `OpenSearch` `Bash` `iptables` `Networking` `MITRE ATT&CK`
+
+## Security and Privacy
+
+This repository contains sanitized documentation and configuration examples derived from the original project.
+
+API keys, credentials, internal addresses, hostnames and other environment-specific sensitive information have been removed or generalized.
+
+## Project Status
+
+The original internship implementation was completed and validated.
+
+This repository serves as a sanitized technical portfolio documenting the architecture, detection engineering, threat intelligence integration, automation and lessons learned during the project.
