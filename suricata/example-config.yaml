@@ -1,0 +1,23 @@
+# Sanitized Suricata configuration example
+# Based on the configuration used in the final project.
+
+vars:
+  address-groups:
+    # Original internal networks were replaced with example subnets.
+    HOME_NET: "[10.10.0.0/24,10.20.0.0/24,10.30.0.0/24]"
+
+    EXTERNAL_NET: "any"
+
+af-packet:
+  - interface: ens19
+
+# Suricata generated JSON events that were later
+# collected and analyzed by the Wazuh agent.
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+
+# Detection rules were managed using suricata-update,
+# including the Emerging Threats ruleset.
