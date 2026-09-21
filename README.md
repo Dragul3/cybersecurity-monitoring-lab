@@ -33,6 +33,32 @@ Main components:
 - **Linux / Ubuntu Server** — Server environment
 - **Wazuh Agents** — Endpoint and infrastructure monitoring
 
+```mermaid
+flowchart TD
+
+    P[Proxmox VE]
+
+    W[Wazuh<br/>SIEM / XDR]
+    S[Suricata<br/>NIDS]
+    M[MISP<br/>Threat Intelligence]
+    A[AbuseIPDB<br/>IP Reputation]
+
+    E[Endpoints / Infrastructure]
+    D[Wazuh Dashboard]
+    AR[Local iptables Response]
+
+    M -->|IOC Export| S
+    S -->|eve.json| W
+    E -->|Wazuh Agents| W
+    A -->|Reputation Enrichment| W
+    W --> D
+    W -->|Active Response| AR
+
+    P --> W
+    P --> S
+    P --> M
+```
+
 Detailed architecture documentation:
 
 [View Architecture Documentation](docs/architecture.md)
